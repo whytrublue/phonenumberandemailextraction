@@ -5,7 +5,7 @@ import re
 # --- App Header ---
 st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
-st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, etc.) to extract contacts.")
+st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
 # --- Separator Input ---
 separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
@@ -16,27 +16,42 @@ uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt
 # --- Function to Extract Contacts ---
 def extract_contacts(text, separator):
     contacts = []
-    escaped_sep = re.escape(separator.strip()) if separator.strip() else r'(?:READ\s*MORE|[-=]{3,}|\n\s*\n)'
-    blocks = re.split(escaped_sep, text, flags=re.IGNORECASE)
+
+    # Default to fallback separators if nothing is provided
+    if separator.strip():
+        escaped_sep = re.escape(separator.strip())
+        blocks = re.split(rf'{escaped_sep}', text)
+    else:
+        blocks = re.split(r'(?:READ\s*MORE|[-=]{3,}|\n\s*\n){1,}', text, flags=re.IGNORECASE)
 
     for block in blocks:
-        if not block.strip():
+        block = block.strip()
+        if not block:
             continue
 
+        # Extract email
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
         email = email_match.group(0) if email_match else ''
 
+        # Extract phone numbers (up to 2 unique)
         phone_matches = re.findall(
             r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)?[:\s\-|\\>;]?\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})',
             block,
             flags=re.IGNORECASE
         )
-        phone_matches = list(dict.fromkeys(phone_matches))
+        phone_matches = list(dict.fromkeys([p.strip() for p in phone_matches if p.strip()]))
         phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
         phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        lines = block.strip().splitlines()
-        name = next((line.strip() for line in lines if line.strip() and '@' not in line and not re.search(r'\d{3}', line)), '')
+        # Attempt to extract name from first lines not containing emails/phones
+        lines = block.splitlines()
+        name = ''
+        for line in lines:
+            if email in line or re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line):
+                continue
+            line = line.strip()
+            if line and not name:
+                name = line
 
         contacts.append({
             'Full Name': name,
