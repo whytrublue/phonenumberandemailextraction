@@ -74,7 +74,10 @@ if uploaded_file:
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
 
-        st.subheader("Copy to Clipboard (Paste into Excel or Sheets)")
-        tsv_text = df.to_csv(index=False, sep='\t')
-        st.code(tsv_text, language='text')
+       # --- Copy to Clipboard (for Excel or Google Sheets) ---
+st.subheader("📄 Copy to Clipboard (Paste into Excel or Sheets)")
+tsv_text = df.to_csv(index=False, sep='\t')
+st.code(tsv_text, language='text')
+
+
 
