@@ -2,38 +2,59 @@ import streamlit as st
 import pandas as pd
 import re
 
-# Function to extract contacts
-def extract_contacts(text):
+# --- App Header ---
+st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
+st.title("📞 Email & Phone Extractor")
+st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like `READ MORE`, `-----`, etc.) to extract contacts.")
+
+# --- Separator Input ---
+separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
+
+# --- File Upload ---
+uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
+
+# --- Function to Extract Contacts ---
+def extract_contacts(text, separator):
     contacts = []
-    # Split the text into potential contact blocks based on double newlines
-    blocks = re.split(r'\n\s*\n', text)
+    escaped_sep = re.escape(separator.strip()) if separator.strip() else r'(?:READ\s*MORE|[-=]{3,}|\n\s*\n)'
+    blocks = re.split(escaped_sep, text, flags=re.IGNORECASE)
 
     for block in blocks:
+        if not block.strip():
+            continue
+
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
-        phone_matches = re.findall(r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)[:\s\-|\\>;]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})|(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', block)
+        email = email_match.group(0) if email_match else ''
 
-        cleaned_phones = [re.sub(r'[^0-9]', '', phone) for match in phone_matches for phone in match if phone]
+        phone_matches = re.findall(
+            r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)?[:\s\-|\\>;]?\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})',
+            block,
+            flags=re.IGNORECASE
+        )
+        phone_matches = list(dict.fromkeys(phone_matches))
+        phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
+        phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        if email_match:
-            email = email_match.group(0)
-            phone1 = cleaned_phones[0] if len(cleaned_phones) > 0 else "Not Available"
-            phone2 = cleaned_phones[1] if len(cleaned_phones) > 1 else "Not Available"
-            contacts.append({"Email": email, "Phone 1": phone1, "Phone 2": phone2})
+        lines = block.strip().splitlines()
+        name = next((line.strip() for line in lines if line.strip() and '@' not in line and not re.search(r'\d{3}', line)), '')
 
-    return pd.DataFrame(contacts)
+        contacts.append({
+            'Full Name': name,
+            'Email': email,
+            'Phone 1': phone1,
+            'Phone 2': phone2
+        })
 
-# Streamlit UI
-st.title("📞 Email & Phone Extractor")
+    return contacts
 
-uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type="txt")
-
+# --- Process Uploaded File ---
 if uploaded_file:
-    text = uploaded_file.read().decode("utf-8")
-    df = extract_contacts(text)
+    text = uploaded_file.read().decode('utf-8')
+    results = extract_contacts(text, separator_input)
+    df = pd.DataFrame(results)
 
-    st.write("### Extracted Data:")
+    st.subheader("📋 Extracted Contacts")
     st.dataframe(df)
 
-    # Download button for CSV
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download CSV", data=csv, file_name="Contacts_Details.csv", mime="text/csv")
+    csv = df.to_csv(index=False)
+    st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
