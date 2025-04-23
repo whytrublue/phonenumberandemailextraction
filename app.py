@@ -12,13 +12,16 @@ def extract_contacts(text):
     # Create a list of dictionaries
     data_list = []
     for email in email_matches:
-        data_list.append({"Email": email, "Phone": "Not Available"})
-    
-    for phone in phone_matches:
-        for entry in data_list:
-            if entry["Phone"] == "Not Available":
-                entry["Phone"] = phone
-                break
+        data = {"Email": email, "Phone 1": "Not Available", "Phone 2": "Not Available"}
+        data_list.append(data)
+
+    for idx, phone in enumerate(phone_matches):
+        # If there are entries with "Not Available" for "Phone 1", assign the first phone number
+        if idx < len(data_list) and data_list[idx]["Phone 1"] == "Not Available":
+            data_list[idx]["Phone 1"] = phone
+        # If there is more than one phone number, assign it to "Phone 2"
+        elif idx < len(data_list) and data_list[idx]["Phone 2"] == "Not Available":
+            data_list[idx]["Phone 2"] = phone
 
     return pd.DataFrame(data_list)
 
