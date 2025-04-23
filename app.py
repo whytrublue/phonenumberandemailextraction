@@ -58,3 +58,8 @@ if uploaded_file:
 
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
+    
+     # Show raw CSV/text for manual copy
+    st.subheader("📄 Copy Extracted Data")
+    st.text_area("You can copy the text below and paste into Notepad or Excel:", value=csv, height=300)
+
