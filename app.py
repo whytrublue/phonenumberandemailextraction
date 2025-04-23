@@ -6,9 +6,12 @@ def extract_contacts(text):
     # Extract emails
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
 
-    # Extract phone numbers
+    # Extract phone numbers with flexibility to handle different formats like "c:", spaces, etc.
     phone_matches = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
-
+    
+    # Handle cases where phone numbers are listed with labels (like "c:", etc.)
+    phone_matches = [phone.split(' ')[-1] for phone in phone_matches]  # Get the actual phone numbers
+    
     # Create a list of dictionaries
     data_list = []
     for email in email_matches:
@@ -16,10 +19,10 @@ def extract_contacts(text):
         data_list.append(data)
 
     for idx, phone in enumerate(phone_matches):
-        # If there are entries with "Not Available" for "Phone 1", assign the first phone number
+        # Assign the first phone number to "Phone 1"
         if idx < len(data_list) and data_list[idx]["Phone 1"] == "Not Available":
             data_list[idx]["Phone 1"] = phone
-        # If there is more than one phone number, assign it to "Phone 2"
+        # Assign the second phone number to "Phone 2"
         elif idx < len(data_list) and data_list[idx]["Phone 2"] == "Not Available":
             data_list[idx]["Phone 2"] = phone
 
