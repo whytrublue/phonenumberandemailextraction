@@ -8,7 +8,7 @@ st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
 # --- Separator Input ---
-separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
+separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="----------------------------------------------")
 
 # --- File Upload ---
 uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
@@ -17,7 +17,7 @@ uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt
 def extract_contacts(text, separator):
     contacts = []
 
-    # Default to fallback separators if nothing is provided
+    # Use the provided separator or fallback to the dashed line separator if none is provided
     if separator.strip():
         escaped_sep = re.escape(separator.strip())
         blocks = re.split(rf'{escaped_sep}', text)
@@ -43,19 +43,17 @@ def extract_contacts(text, separator):
         phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
         phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        # Improved name extraction: Look for the first line with a probable name
+        # Attempt to extract name from the first line not containing emails/phones
         lines = block.splitlines()
         name = ''
         for line in lines:
-            line = line.strip()
-            # Skip lines with email or phone numbers
             if email in line or re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line):
                 continue
-            # Look for a line that likely contains a name (capitalized first letters, no common job titles or office labels)
-            if line and re.match(r'^[A-Z][a-z]+\s[A-Z][a-z]+$', line):  # Simple heuristic for full names
+            line = line.strip()
+            if line and not name:
                 name = line
-                break
 
+        # Add the extracted information to contacts
         contacts.append({
             'Full Name': name,
             'Email': email,
