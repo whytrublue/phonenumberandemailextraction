@@ -5,33 +5,17 @@ import re
 # Function to extract contacts
 def extract_contacts(text):
     contacts = []
-    lines = text.strip().split('\n')
-    current_block = []
+    # Split the text into potential contact blocks based on double newlines
+    blocks = re.split(r'\n\s*\n', text)
 
-    for line in lines:
-        if re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', line):
-            if current_block:
-                email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', current_block[-1])
-                if email_match:
-                    email = email_match.group(0)
-                    block_text = "\n".join(current_block)
-                    phone_matches = re.findall(r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)[:\s\-|\\>;]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})|(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', block_text)
-                    cleaned_phones = [re.sub(r'[^0-9]', '', phone) for match in phone_matches for phone in match if phone]
-                    phone1 = cleaned_phones[0] if len(cleaned_phones) > 0 else "Not Available"
-                    phone2 = cleaned_phones[1] if len(cleaned_phones) > 1 else "Not Available"
-                    contacts.append({"Email": email, "Phone 1": phone1, "Phone 2": phone2})
-            current_block = [line]
-        else:
-            current_block.append(line)
+    for block in blocks:
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
+        phone_matches = re.findall(r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)[:\s\-|\\>;]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})|(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', block)
 
-    # Process the last block if it contains an email
-    if current_block:
-        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', current_block[-1])
+        cleaned_phones = [re.sub(r'[^0-9]', '', phone) for match in phone_matches for phone in match if phone]
+
         if email_match:
             email = email_match.group(0)
-            block_text = "\n".join(current_block)
-            phone_matches = re.findall(r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)[:\s\-|\\>;]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})|(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', block_text)
-            cleaned_phones = [re.sub(r'[^0-9]', '', phone) for match in phone_matches for phone in match if phone]
             phone1 = cleaned_phones[0] if len(cleaned_phones) > 0 else "Not Available"
             phone2 = cleaned_phones[1] if len(cleaned_phones) > 1 else "Not Available"
             contacts.append({"Email": email, "Phone 1": phone1, "Phone 2": phone2})
