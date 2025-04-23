@@ -43,15 +43,18 @@ def extract_contacts(text, separator):
         phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
         phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        # Attempt to extract name from first lines not containing emails/phones
+        # Improved name extraction: Look for the first line with a probable name
         lines = block.splitlines()
         name = ''
         for line in lines:
+            line = line.strip()
+            # Skip lines with email or phone numbers
             if email in line or re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line):
                 continue
-            line = line.strip()
-            if line and not name:
+            # Look for a line that likely contains a name (capitalized first letters, no common job titles or office labels)
+            if line and re.match(r'^[A-Z][a-z]+\s[A-Z][a-z]+$', line):  # Simple heuristic for full names
                 name = line
+                break
 
         contacts.append({
             'Full Name': name,
