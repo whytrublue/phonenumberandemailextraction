@@ -74,20 +74,7 @@ if uploaded_file:
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
 
-   # --- Copy to Clipboard Feature ---
-copy_text = df.to_csv(index=False, sep='\t')  # Tab-separated for copy-paste
-
-st.markdown("""
-    <h4>📋 Copy Extracted Contacts</h4>
-    <textarea id="copyBox" style="width:100%; height:200px; font-family: monospace; font-size: 14px;">{}</textarea>
-    <button onclick="copyToClipboard()" style="margin-top: 10px;">📄 Copy to Clipboard</button>
-
-    <script>
-    function copyToClipboard() {{
-        var copyText = document.getElementById("copyBox");
-        copyText.select();
-        document.execCommand("copy");
-    }}
-    </script>
-""".format(copy_text), unsafe_allow_html=True)
+        st.subheader("Copy to Clipboard (Paste into Excel or Sheets)")
+        tsv_text = df.to_csv(index=False, sep='\t')
+        st.code(tsv_text, language='text')
 
