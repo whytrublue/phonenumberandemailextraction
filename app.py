@@ -5,7 +5,7 @@ import re
 # --- App Header ---
 st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
-st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like `READ MORE`, `-----`, etc.) to extract contacts.")
+st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, etc.) to extract contacts.")
 
 # --- Separator Input ---
 separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
@@ -58,10 +58,3 @@ if uploaded_file:
 
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
-    
-        # Show TSV format for easy copy-paste into Excel/Sheets
-    st.subheader("📋 Copy to Clipboard (Paste into Excel or Sheets)")
-    tsv_text = df.to_csv(index=False, sep='\t')
-    st.code(tsv_text, language='text')
-
-
