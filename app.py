@@ -8,7 +8,7 @@ st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
 # --- Separator Input ---
-separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
+separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="----------------------------------------------")
 
 # --- File Upload ---
 uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
@@ -17,7 +17,7 @@ uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt
 def extract_contacts(text, separator):
     contacts = []
 
-    # Default to fallback separators if nothing is provided
+    # Use the provided separator or fallback to the dashed line separator if none is provided
     if separator.strip():
         escaped_sep = re.escape(separator.strip())
         blocks = re.split(rf'{escaped_sep}', text)
@@ -29,7 +29,13 @@ def extract_contacts(text, separator):
         if not block:
             continue
 
-        # Extract email
+        # Split the block into lines to handle the name as the first line of each contact
+        lines = block.splitlines()
+        
+        # The first line is treated as the Full Name
+        name = lines[0].strip()
+
+        # Extract email from the block
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
         email = email_match.group(0) if email_match else ''
 
@@ -43,16 +49,7 @@ def extract_contacts(text, separator):
         phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
         phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        # Attempt to extract name from first lines not containing emails/phones
-        lines = block.splitlines()
-        name = ''
-        for line in lines:
-            if email in line or re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line):
-                continue
-            line = line.strip()
-            if line and not name:
-                name = line
-
+        # Add the extracted information to contacts
         contacts.append({
             'Full Name': name,
             'Email': email,
