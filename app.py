@@ -4,60 +4,23 @@ import re
 
 # Function to extract contacts
 def extract_contacts(text):
-    # Define regular expressions for phone numbers with special prefixes
-    mobile_patterns = [
-        r'(m[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # m, m:, m followed by spaces or symbols
-        r'(c[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # c, c:, c followed by spaces or symbols
-        r'(cell[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # cell, cell phone, etc.
-        r'(mobile[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # mobile, mobile phone, mobile number
-        r'(direct[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})'  # direct, direct phone, direct number
-    ]
+    contacts = []
+    # Split the text into potential contact blocks based on double newlines
+    blocks = re.split(r'\n\s*\n', text)
 
-    office_patterns = [
-        r'(o[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # o, o:, o followed by symbols or spaces
-        r'(tel[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # tel, telephone, telephone number
-        r'(telephone[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})',  # telephone
-        r'(office[:\s\-|\\>;]?\d{3}[-.\s]?\d{3}[-.\s]?\d{4})'  # office, office phone
-    ]
-    
-    # Extract emails
-    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
+    for block in blocks:
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
+        phone_matches = re.findall(r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)[:\s\-|\\>;]?\s*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})|(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})', block)
 
-    # Combine all patterns and extract matching phone numbers
-    mobile_matches = []
-    office_matches = []
+        cleaned_phones = [re.sub(r'[^0-9]', '', phone) for match in phone_matches for phone in match if phone]
 
-    for pattern in mobile_patterns:
-        mobile_matches.extend(re.findall(pattern, text))
-    
-    for pattern in office_patterns:
-        office_matches.extend(re.findall(pattern, text))
+        if email_match:
+            email = email_match.group(0)
+            phone1 = cleaned_phones[0] if len(cleaned_phones) > 0 else "Not Available"
+            phone2 = cleaned_phones[1] if len(cleaned_phones) > 1 else "Not Available"
+            contacts.append({"Email": email, "Phone 1": phone1, "Phone 2": phone2})
 
-    # Clean and ensure there are no duplicates or unnecessary spaces
-    mobile_matches = [re.sub(r'[^0-9]', '', phone) for phone in mobile_matches]
-    office_matches = [re.sub(r'[^0-9]', '', phone) for phone in office_matches]
-
-    # Create a list of dictionaries with email and phones
-    data_list = []
-    for email in email_matches:
-        data = {"Email": email, "Phone 1": "Not Available", "Phone 2": "Not Available"}
-        data_list.append(data)
-
-    # Assign the first mobile number to Phone 1 and the second mobile number to Phone 2
-    for idx, phone in enumerate(mobile_matches):
-        if idx < len(data_list) and data_list[idx]["Phone 1"] == "Not Available":
-            data_list[idx]["Phone 1"] = phone
-        elif idx < len(data_list) and data_list[idx]["Phone 2"] == "Not Available":
-            data_list[idx]["Phone 2"] = phone
-
-    # Assign the first office number to Phone 1 and the second office number to Phone 2
-    for idx, phone in enumerate(office_matches):
-        if idx < len(data_list) and data_list[idx]["Phone 1"] == "Not Available":
-            data_list[idx]["Phone 1"] = phone
-        elif idx < len(data_list) and data_list[idx]["Phone 2"] == "Not Available":
-            data_list[idx]["Phone 2"] = phone
-
-    return pd.DataFrame(data_list)
+    return pd.DataFrame(contacts)
 
 # Streamlit UI
 st.title("📞 Email & Phone Extractor")
@@ -67,7 +30,7 @@ uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type="txt")
 if uploaded_file:
     text = uploaded_file.read().decode("utf-8")
     df = extract_contacts(text)
-    
+
     st.write("### Extracted Data:")
     st.dataframe(df)
 
