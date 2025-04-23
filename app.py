@@ -73,3 +73,13 @@ if uploaded_file:
 
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
+
+    # --- Copy to Clipboard Feature ---
+    copy_text = df.to_csv(index=False, sep='\t')  # Tab-separated for nice paste
+    st.text_area("📋 Copy Extracted Contacts (Tab-Separated)", value=copy_text, height=200)
+
+    st.markdown("""
+        <style>
+        .stTextArea textarea {font-family: monospace; font-size: 14px;}
+        </style>
+    """, unsafe_allow_html=True)
