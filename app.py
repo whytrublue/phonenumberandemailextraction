@@ -8,7 +8,7 @@ st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
 # --- Separator Input ---
-separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="----------------------------------------------")
+separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="READ MORE")
 
 # --- File Upload ---
 uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
@@ -17,7 +17,7 @@ uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt
 def extract_contacts(text, separator):
     contacts = []
 
-    # Use the provided separator or fallback to the dashed line separator if none is provided
+    # Default to fallback separators if nothing is provided
     if separator.strip():
         escaped_sep = re.escape(separator.strip())
         blocks = re.split(rf'{escaped_sep}', text)
@@ -43,7 +43,7 @@ def extract_contacts(text, separator):
         phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
         phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-        # Attempt to extract name from the first line not containing emails/phones
+        # Attempt to extract name from first lines not containing emails/phones
         lines = block.splitlines()
         name = ''
         for line in lines:
@@ -53,7 +53,6 @@ def extract_contacts(text, separator):
             if line and not name:
                 name = line
 
-        # Add the extracted information to contacts
         contacts.append({
             'Full Name': name,
             'Email': email,
