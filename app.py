@@ -7,44 +7,35 @@ def extract_contact_details(text):
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
     
-    # Split into non-empty lines
-    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    # Split into contact blocks (separated by empty lines)
+    contact_blocks = re.split(r'\n\s*\n', text.strip())
     
     contacts = []
-    current_email = None
-    current_phones = []
     
-    for line in lines:
-        # Check if line contains an email
-        email_match = re.search(email_pattern, line)
-        if email_match:
-            # If we already have an email pending, save it first
-            if current_email is not None:
-                contacts.append({
-                    "Email": current_email,
-                    "Phone 1": current_phones[0] if len(current_phones) > 0 else None,
-                    "Phone 2": current_phones[1] if len(current_phones) > 1 else None
-                })
-                current_phones = []
-            
-            current_email = email_match.group(0)
-            # Also check for phones in the same line
-            phones = re.findall(phone_pattern, line)
-            current_phones.extend(phones)
+    for block in contact_blocks:
+        lines = [line.strip() for line in block.split('\n') if line.strip()]
+        if not lines:
             continue
+            
+        email = None
+        phones = []
         
-        # Check for phone numbers
-        phones = re.findall(phone_pattern, line)
-        if phones:
-            current_phones.extend(phones)
-    
-    # Add the last contact if exists
-    if current_email is not None:
-        contacts.append({
-            "Email": current_email,
-            "Phone 1": current_phones[0] if len(current_phones) > 0 else None,
-            "Phone 2": current_phones[1] if len(current_phones) > 1 else None
-        })
+        for line in lines:
+            # Check for email
+            email_match = re.search(email_pattern, line)
+            if email_match:
+                email = email_match.group(0)
+            
+            # Check for phone numbers
+            phone_matches = re.findall(phone_pattern, line)
+            phones.extend(phone_matches)
+        
+        if email:
+            contacts.append({
+                "Email": email,
+                "Phone 1": phones[0] if len(phones) > 0 else None,
+                "Phone 2": phones[1] if len(phones) > 1 else None
+            })
     
     return contacts
 
