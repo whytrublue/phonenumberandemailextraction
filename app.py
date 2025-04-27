@@ -7,7 +7,7 @@ def extract_contacts(text):
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
-    # Keywords for mobile
+    # Keywords
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
 
     # Extract all emails
@@ -19,25 +19,8 @@ def extract_contacts(text):
     results = []
     email_index = 0  # Track email position
 
-    # Initialize variables for Name and Job Title
-    full_name = None
-    job_title = None
-
     for block in blocks:
         block_lower = block.lower()
-
-        # Check if the block is a heading (H1 to H6) for name and job title
-        if block.startswith('#'):  # This indicates a heading (H1 to H6)
-            heading_level = block.count('#')
-            # Extracting Name and Job Title
-            if heading_level == 1:  # H1 is assumed to be Name + Job Title
-                name_job_title = block.strip('#').strip()  # Remove leading '#' and any extra spaces
-                if not full_name:  # Assume first heading is Name
-                    full_name = name_job_title
-                else:  # Assume second heading is Job Title
-                    job_title = name_job_title
-        
-        # Extract phone numbers
         phones = re.findall(phone_pattern, block)
 
         mobile = None
@@ -69,8 +52,6 @@ def extract_contacts(text):
                 email_index += 1
 
             results.append({
-                'Full Name': full_name,
-                'Job Title': job_title,
                 'Email': email,
                 'Mobile': mobile,
                 'Office': office
@@ -79,7 +60,7 @@ def extract_contacts(text):
     return results
 
 # Streamlit app
-st.title("Extract Emails, Mobile, Office Numbers, Name, and Job Title 📄📞")
+st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
 
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
