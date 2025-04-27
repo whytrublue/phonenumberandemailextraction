@@ -7,7 +7,7 @@ def extract_contacts(text):
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
-    # Keywords for mobile
+    # Keywords
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
 
     # Extract all emails
@@ -56,6 +56,7 @@ def extract_contacts(text):
                 'Mobile': mobile,
                 'Office': office
             })
+
     return results
 
 # Streamlit app
@@ -79,16 +80,13 @@ if st.button("Extract"):
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
 
-    st.success("Extraction Completed Successfully ✅")
-    st.dataframe(df)
+    # Display results in a text area box
+    extracted_text = df.to_csv(index=False)
 
-    # Text area for pasting
-pasted_data = st.text_area("Paste your text data here", height=300)
+    st.subheader("Extracted Data (You can copy this to your clipboard)")
+    st.text_area("Result", extracted_text, height=300)
 
-        st.subheader("Copy to Clipboard (Paste into Excel or Sheets)")
-        tsv_text = df.to_csv(index=False, sep='\t')
-        st.code(tsv_text, language='text')
-
+    # Option to download the extracted data as CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="Download Extracted Data as CSV",
