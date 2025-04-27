@@ -84,11 +84,12 @@ if st.button("Extract"):
     st.subheader("Extracted Data Table")
     st.dataframe(df)  # This will show the data in a table format
 
-    # Display results in a text area box
-    extracted_text = df.to_csv(index=False)
+    # Format the extracted data for copy-pasting
+    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
-    st.subheader("Extracted Data (You can copy this to your clipboard)")
-    st.text_area("Result", extracted_text, height=300)
+    # Display the formatted data with a copy option
+    st.subheader("📋 Copy Extracted Data")
+    st.code(formatted_data, language="text")
 
     # Option to download the extracted data as CSV
     csv = df.to_csv(index=False).encode('utf-8')
