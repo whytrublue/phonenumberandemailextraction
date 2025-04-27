@@ -34,28 +34,32 @@ def extract_contacts(text):
                     if match:
                         mobile = match.group(1)
                         break
-                # If two phones, assign the other one to office
+                
+                # If two phones exist, assign the other one to office
                 for phone in phones:
                     if phone != mobile:
                         office = phone
                         break
             else:
+                # If two phones exist, assign mobile and office correctly
                 if len(phones) == 2:
-                    office = phones[0]
-                    mobile = phones[1]
+                    mobile = phones[0]  # Assign first phone to mobile
+                    office = phones[1]  # Assign second phone to office
                 elif len(phones) == 1:
-                    office = phones[0]
+                    office = phones[0]  # If only one phone, assign it to office
 
             # Assign extracted email
             if email_index < len(emails):
                 email = emails[email_index]
                 email_index += 1
 
-            results.append({
-                'Email': email,
-                'Mobile': mobile,
-                'Office': office
-            })
+            # Ensure both mobile and office are found before appending
+            if mobile and office:
+                results.append({
+                    'Email': email,
+                    'Mobile': mobile,
+                    'Office': office
+                })
 
     return results
 
