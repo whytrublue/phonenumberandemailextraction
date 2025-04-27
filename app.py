@@ -7,18 +7,29 @@ st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
-# --- Custom CSS to reduce the size of the file uploader container ---
+# --- Custom CSS to style the components similarly ---
 st.markdown("""
     <style>
-        .stFileUploader div {
-            width: 150px !important;  /* Reduce the width of the file uploader */
-            height: 50px !important;  /* Reduce the height of the file uploader */
+        /* Style the custom separator to make it more compact */
+        .stTextInput, .stFileUploader {
+            width: 100% !important;  /* Make both components take the full width */
+            margin-bottom: 10px !important;  /* Space between components */
         }
-        .stFileUploader label {
-            font-size: 12px !important;  /* Optional: Reduce the font size */
+        /* Style the file uploader to look similar to the separator input */
+        .stFileUploader div {
+            width: 100% !important;  /* Use full width for the file upload */
+            height: 40px !important;  /* Keep the height compact */
+            padding: 5px !important;  /* Reduce padding */
+            border-radius: 5px !important;  /* Rounded corners for consistency */
+            border: 1px solid #ccc !important;  /* Border to make it look like a text input */
         }
         .stFileUploader input[type="file"] {
-            padding: 5px !important;  /* Reduce the padding around the file upload button */
+            height: 100% !important;  /* Make sure file input is full height */
+            padding: 5px !important;  /* Padding inside the file input */
+        }
+        /* Optional: Adjust the text size of the file uploader */
+        .stFileUploader label {
+            font-size: 14px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -30,8 +41,8 @@ col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widt
 with col1:
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
 
-# --- Column 2: File Upload and Text Area ---
-with col2:
+# --- Column 2: File Upload Below Custom Separator ---
+with col1:  # Place the upload below custom separator
     uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
     text_input = st.text_area("Or paste your text here:", height=150)
 
