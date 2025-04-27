@@ -24,8 +24,8 @@ def extract_contacts(text):
         block_lower = block.lower()
         phones = re.findall(phone_pattern, block)
 
-        mobile = None
-        office = None
+        mobile = 
+        office = 
 
         # Extract phone numbers
         if phones:
