@@ -4,7 +4,7 @@ import re
 
 def extract_contacts(text):
     # Patterns
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
     # Keywords
@@ -48,15 +48,14 @@ def extract_contacts(text):
 
             # Assign extracted email
             if email_index < len(emails):
-    email = emails[email_index]
-    email_index += 1
+                email = emails[email_index]
+                email_index += 1
 
-    results.append({
-        'Email': email,
-        'Mobile': mobile,
-        'Office': office
-    })
-# Else ignore block (don't add blank email rows)
+                results.append({
+                    'Email': email,
+                    'Mobile': mobile,
+                    'Office': office
+                })
 
     return results
 
