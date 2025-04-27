@@ -72,6 +72,18 @@ if uploaded_file:
 
     st.subheader("📋 Extracted Contacts")
     st.dataframe(df)
+    
+    if st.button("Extract"):
+    if uploaded_file is not None:
+        text = uploaded_file.read().decode('utf-8')
+    elif text_input:
+        text = text_input
+    else:
+        st.error("Please upload a file or paste some text.")
+        st.stop()
+
+    extracted_data = extract_contacts(text)
+    df = pd.DataFrame(extracted_data)
 
     csv = df.to_csv(index=False)
     st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
