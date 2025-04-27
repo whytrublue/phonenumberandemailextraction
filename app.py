@@ -1,106 +1,95 @@
-# streamlit_app.py
-
 import streamlit as st
 import pandas as pd
 import re
 
-# Function to extract contacts
-def extract_contacts(file_content):
-    data_list = []
+# Function to extract emails and phone numbers
+def extract_contacts(text):
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
 
-    # Extract emails
-    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', file_content)
+    mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
+    office_keywords = ['office', 'tel', 'telephone', 'direct', 'd', 'o', 't']
 
-    # Split lines
-    lines = file_content.splitlines()
+    emails = re.findall(email_pattern, text)
+    phone_blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)  # split on new lines and separators like |, [], {}, ()
+    results = []
 
-    emails = []
-    mobiles = []
-    offices = []
+    for block in phone_blocks:
+        block_lower = block.lower()
 
-    # Process line by line
-    for line in lines:
-        # Extract email
-        email_in_line = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', line)
-        if email_in_line:
-            emails.extend(email_in_line)
+        # Find all phone numbers in the block
+        phones = re.findall(phone_pattern, block)
 
-        # Special case: look for office|c:mobile pattern
-        if 'c:' in line.lower() or 'c ' in line.lower():
-            parts = re.split(r'\||\-|\/', line)  # split using |, -, /
-            for part in parts:
-                if re.search(r'(?i)c[\s:=+>|]*\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip()):
-                    mobile = re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip()).group()
-                else:
-                    office = re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip())
-                    if office:
-                        office = office.group()
-                    else:
-                        office = ''
-            mobiles.append(mobile if 'mobile' in locals() else '')
-            offices.append(office if 'office' in locals() else '')
+        # Assign default values
+        mobile = None
+        office = None
 
+        if phones:
+            for phone in phones:
+                # Check for mobile keyword near the phone
+                if any(re.search(r'\b' + kw + r'\b\s*[:=\-/>|]?\s*' + re.escape(phone), block_lower) for kw in mobile_keywords):
+                    mobile = phone
+                # Check for office keyword near the phone
+                elif any(re.search(r'\b' + kw + r'\b\s*[:=\-/>|]?\s*' + re.escape(phone), block_lower) for kw in office_keywords):
+                    office = phone
+
+            # If no clear mobile/office keyword, and 2 phones present
+            if not mobile and not office and len(phones) == 2:
+                mobile = phones[1]  # assume second number is mobile if | separator is used
+                office = phones[0]  # first number is office
+
+            # If only one phone and no keyword, assume it's office
+            if not mobile and not office and len(phones) == 1:
+                office = phones[0]
+
+        # Assign extracted details
+        result = {
+            'Email': None,  # we'll fill email later
+            'Mobile': mobile,
+            'Office': office
+        }
+        results.append(result)
+
+    # Now assign emails one by one
+    for i, email in enumerate(emails):
+        if i < len(results):
+            results[i]['Email'] = email
         else:
-            # Normal phone extraction if no "c:" found
-            phones = re.findall(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line)
-            if phones:
-                # Assume first phone as office
-                if len(phones) == 2:
-                    offices.append(phones[0])
-                    mobiles.append(phones[1])
-                elif len(phones) == 1:
-                    offices.append(phones[0])
-                    mobiles.append('')
+            # more emails than phone entries
+            results.append({'Email': email, 'Mobile': None, 'Office': None})
 
-    # Combine based on index
-    max_len = max(len(emails), len(mobiles), len(offices))
-    emails += [''] * (max_len - len(emails))
-    mobiles += [''] * (max_len - len(mobiles))
-    offices += [''] * (max_len - len(offices))
-
-    data = {
-        'Email': emails,
-        'Mobile': mobiles,
-        'Office': offices
-    }
-
-    return pd.DataFrame(data)
+    return results
 
 # Streamlit UI
-st.title("📄 Smart Contact Extractor")
+st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
 
-st.write("Upload a Notepad file **or** paste your text below:")
+# File upload option
+uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
-# Upload option
-uploaded_file = st.file_uploader("Upload Notepad (.txt) File", type=["txt"])
+# Textbox option
+st.write("OR")
+text_input = st.text_area("Paste text here")
 
-# Paste text option
-pasted_text = st.text_area("Or paste your text here", height=200)
-
-# Extract button
-if st.button("Extract Contacts"):
-    if uploaded_file:
-        file_content = uploaded_file.read().decode("utf-8")
-    elif pasted_text.strip():
-        file_content = pasted_text
+if st.button("Extract"):
+    if uploaded_file is not None:
+        text = uploaded_file.read().decode('utf-8')
+    elif text_input:
+        text = text_input
     else:
-        st.warning("⚠️ Please upload a file or paste some text.")
+        st.error("Please upload a file or paste some text.")
         st.stop()
 
-    # Extract contacts
-    df = extract_contacts(file_content)
+    extracted_data = extract_contacts(text)
+    df = pd.DataFrame(extracted_data)
 
-    if not df.empty:
-        st.subheader("Extracted Contacts:")
-        st.dataframe(df)
+    st.success("Extraction Complete!")
+    st.dataframe(df)
 
-        # Prepare CSV for download
-        csv = df.to_csv(index=False)
-        st.download_button(
-            label="Download Contacts CSV",
-            data=csv,
-            file_name="Contacts_Details.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("No contacts found in the provided content.")
+    # Download option
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download Extracted Data as CSV",
+        data=csv,
+        file_name='extracted_contacts.csv',
+        mime='text/csv',
+    )
