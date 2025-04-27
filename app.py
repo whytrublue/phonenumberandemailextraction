@@ -3,17 +3,18 @@ import pandas as pd
 import re
 
 def extract_contacts(text):
-    # Patterns
+    # Patterns for email and phone number
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
-    # Keywords
+    # Keywords for mobile and office
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
+    office_keywords = ['office', 'office number', 'tel', 'telephone', 'direct', 'd', 'o', 't']
 
-    # Extract all emails
+    # Extract emails
     emails = re.findall(email_pattern, text)
 
-    # Split text into blocks based on newline or separators
+    # Split the text into blocks based on new lines and separators
     blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)
 
     results = []
@@ -26,27 +27,28 @@ def extract_contacts(text):
         mobile = None
         office = None
 
+        # Extract phone numbers
         if phones:
             if any(kw in block_lower for kw in mobile_keywords):
-                # Find which phone is Mobile based on proximity to keyword
+                # Look for a mobile number near any mobile keywords
                 for kw in mobile_keywords:
                     match = re.search(rf'{kw}\s*[:=\-/>|]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
                     if match:
                         mobile = match.group(1)
                         break
-                # If two phones, assign the other one to office
+                # If two phones are found, assign the second one to office
                 for phone in phones:
                     if phone != mobile:
                         office = phone
                         break
             else:
                 if len(phones) == 2:
-                    office = phones[0]
-                    mobile = phones[1]
+                    mobile = phones[0]
+                    office = phones[1]
                 elif len(phones) == 1:
                     office = phones[0]
 
-            # Assign extracted email
+            # Assign email from extracted emails
             if email_index < len(emails):
                 email = emails[email_index]
                 email_index += 1
@@ -59,7 +61,7 @@ def extract_contacts(text):
 
     return results
 
-# Streamlit app
+# Streamlit UI
 st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
 
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
@@ -82,9 +84,9 @@ if st.button("Extract"):
 
     # Display results as a table
     st.subheader("Extracted Data Table")
-    st.dataframe(df)  # This will show the data in a table format
+    st.dataframe(df)
 
-    # Format the extracted data for copy-pasting
+    # Format the extracted data for easy copy-pasting
     formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
     # Display the formatted data with a copy option
