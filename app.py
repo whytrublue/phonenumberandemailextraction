@@ -41,7 +41,12 @@ def extract_contact_details(text):
 
         # Extract the name, email, and phone numbers
         name = lines[i].strip()
-        email = re.search(email_pattern, lines[i+1]).group(0) if i + 1 < len(lines) else ""
+
+        # Safely extract email, ensuring re.search() didn't return None
+        email_match = re.search(email_pattern, lines[i+1]) if i + 1 < len(lines) else None
+        email = email_match.group(0) if email_match else ""
+
+        # Safely extract phone numbers, ensuring re.findall() doesn't return an empty list
         phones = re.findall(phone_pattern, lines[i+2]) if i + 2 < len(lines) else []
 
         office_phone = None
