@@ -6,6 +6,8 @@ def extract_contacts(text):
     # Patterns
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+
+    # Keywords
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
 
     # Extract all emails
@@ -24,18 +26,25 @@ def extract_contacts(text):
         mobile = None
         office = None
 
-        # Check if there are multiple phone numbers in the block
         if phones:
-            # If there is a 'c:', assign the corresponding phone as mobile
-            for phone in phones:
-                if 'c:' in block_lower:
-                    mobile = phone
-                    phones.remove(phone)
-                    break
-
-            # If there are still phones left, assign the first one to office
-            if phones:
-                office = phones[0]
+            if any(kw in block_lower for kw in mobile_keywords):
+                # Find which phone is Mobile based on proximity to keyword
+                for kw in mobile_keywords:
+                    match = re.search(rf'{kw}\s*[:=\-/>|]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
+                    if match:
+                        mobile = match.group(1)
+                        break
+                # If two phones, assign the other one to office
+                for phone in phones:
+                    if phone != mobile:
+                        office = phone
+                        break
+            else:
+                if len(phones) == 2:
+                    office = phones[0]
+                    mobile = phones[1]
+                elif len(phones) == 1:
+                    office = phones[0]
 
             # Assign extracted email
             if email_index < len(emails):
@@ -75,8 +84,8 @@ if st.button("Extract"):
     st.subheader("Extracted Data Table")
     st.dataframe(df)  # This will show the data in a table format
 
-    # Format the extracted data for copy-pasting, replacing None with empty string
-    formatted_data = "\n".join(df.apply(lambda row: "\t".join([str(val) if val is not None else '' for val in row]), axis=1))
+    # Format the extracted data for copy-pasting
+    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
     # Display the formatted data with a copy option
     st.subheader("📋 Copy Extracted Data")
