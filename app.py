@@ -11,14 +11,14 @@ st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custo
 st.markdown("""
     <style>
         .stTextArea textarea {
-            width: 100px !important;
-            height: 50px !important;
+            width: 10px !important;
+            height: 10px !important;
         }
         .stFileUploader div {
-            width: 50px !important;  /* Very small width for file uploader */
+            width: 10px !important;  /* Very small width for file uploader */
         }
         .stFileUploader label {
-            font-size: 12px !important;  /* Smaller font size for label */
+            font-size: 10px !important;  /* Smaller font size for label */
         }
     </style>
 """, unsafe_allow_html=True)
