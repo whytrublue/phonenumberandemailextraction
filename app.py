@@ -20,9 +20,15 @@ def extract_contacts(text):
     results = []
     email_index = 0  # Track email position
 
+    # Iterate through each block to extract phone numbers and emails
+    for block in blocks:
+        block_lower = block.lower()
+        phones = re.findall(phone_pattern, block)
 
+        mobile = None
+        office = None
 
-        # Extract phone numbers
+        # Extract phone numbers based on mobile and office keywords
         if phones:
             if any(kw in block_lower for kw in mobile_keywords):
                 # Look for a mobile number near any mobile keywords
