@@ -7,6 +7,19 @@ st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
+# --- Custom CSS to adjust the size ---
+st.markdown("""
+    <style>
+        .stTextArea textarea {
+            width: 300px !important;
+            height: 150px !important;
+        }
+        .stFileUploader div {
+            width: 300px !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- Layout using Columns ---
 col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widths
 
@@ -14,10 +27,10 @@ col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widt
 with col1:
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
 
-# --- Column 2: File Upload and Text Area ---
+# --- Column 2: File Upload and Text Area (Smaller) ---
 with col2:
     uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
-    text_input = st.text_area("Or paste your text here:")
+    text_input = st.text_area("Or paste your text here:", height=150)
 
 # --- Extract Button ---
 if st.button("Extract"):
