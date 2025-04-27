@@ -14,10 +14,13 @@ col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widt
 with col1:
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
 
-# --- Column 2: File Upload and Text Area ---
+# --- Column 2: File Upload and Text Area (Smaller) ---
 with col2:
-    uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
-    text_input = st.text_area("Or paste your text here:")
+    # Make file uploader smaller
+    uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"], use_container_width=False)
+    
+    # Use CSS to control text area size
+    text_input = st.text_area("Or paste your text here:", height=150)  # Adjust height as needed
 
 # --- Extract Button ---
 if st.button("Extract"):
