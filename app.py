@@ -11,8 +11,8 @@ st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custo
 st.markdown("""
     <style>
         /* Style the custom separator to make it more compact */
-        .stTextInput, .stFileUploader {
-            width: 100% !important;  /* Make both components take the full width */
+        .stTextInput {
+            width: 100% !important;  /* Make the separator take full width */
             margin-bottom: 10px !important;  /* Space between components */
         }
         /* Style the file uploader to look similar to the separator input */
@@ -35,16 +35,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Layout using Columns ---
-col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widths
+col1, col2, col3 = st.columns([1, 3, 1])  # Create 3 columns with different widths
 
-# --- Column 1: Custom Separator Input ---
+# --- Column 1: Custom Separator and File Upload Below ---
 with col1:
+    # Custom Separator Input
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
-
-# --- Column 2: File Upload Below Custom Separator ---
-with col1:  # Place the upload below custom separator
+    # File Upload
     uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
-    text_input = st.text_area("Or paste your text here:", height=150)
+
+# --- Column 2: Text Area for User Input (with more space) ---
+with col2:
+    text_input = st.text_area("Or paste your text here:", height=300)
 
 # --- Extract Button ---
 if st.button("Extract"):
