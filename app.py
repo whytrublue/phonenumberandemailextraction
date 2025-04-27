@@ -21,8 +21,11 @@ def extract_contact_details(text):
         else:
             email = ""
         
-        # Extract phone numbers from the next line (or the next line after)
-        phones = re.findall(phone_pattern, lines[i+2])
+        # Check if there's enough data for phone extraction
+        if i+2 < len(lines):
+            phones = re.findall(phone_pattern, lines[i+2])
+        else:
+            phones = []
         
         # Assign phone numbers
         office_phone = None
@@ -45,41 +48,36 @@ def extract_contact_details(text):
 
     return contacts
 
+# Streamlit app
+st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
 
-# Streamlit UI code
-st.title("Contact Information Extractor 📄📞")
-
-# File upload
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
-# Text input area (alternative to upload)
-text_input = st.text_area("Or paste your text here:")
+st.write("OR")
 
-if st.button("Extract Contacts"):
+text_input = st.text_area("Paste your text here:")
+
+if st.button("Extract"):
     if uploaded_file is not None:
-        # If file is uploaded, read it
         text = uploaded_file.read().decode('utf-8')
     elif text_input:
-        # If text is pasted
         text = text_input
     else:
         st.error("Please upload a file or paste some text.")
         st.stop()
 
-    # Extract contact details from the text
+    # Extract contact details
     extracted_data = extract_contact_details(text)
-
-    # Convert to DataFrame for better visualization
+    
+    # Display the results as a table
     df = pd.DataFrame(extracted_data)
-
-    # Display the data in a table
-    st.subheader("Extracted Contact Information")
-    st.dataframe(df)
+    
+    st.subheader("Extracted Data Table")
+    st.dataframe(df)  # Display the dataframe in the UI
 
     # Format the extracted data for copy-pasting
     formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
-    # Display the formatted data
     st.subheader("📋 Copy Extracted Data")
     st.code(formatted_data, language="text")
 
