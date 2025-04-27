@@ -5,7 +5,7 @@ import pandas as pd
 def extract_contact_details(text):
     # Regex patterns
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
+    phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\d{3}[-.\s]?\d{4}'
     
     # Split into non-empty lines
     lines = [line.strip() for line in text.split("\n") if line.strip()]
@@ -15,30 +15,32 @@ def extract_contact_details(text):
     current_phones = []
     
     for line in lines:
-        # Check if line contains an email
+        # Find emails first
         email_match = re.search(email_pattern, line)
         if email_match:
-            # If we already have an email pending, save it first
+            # If we already have an email pending, save it
             if current_email is not None:
                 contacts.append({
                     "Email": current_email,
                     "Phone 1": current_phones[0] if len(current_phones) > 0 else None,
                     "Phone 2": current_phones[1] if len(current_phones) > 1 else None
                 })
-                current_phones = []
+                current_phones = []  # Reset for next contact
             
+            # Store the current email
             current_email = email_match.group(0)
-            # Also check for phones in the same line
+            
+            # Find phone numbers in the same line
             phones = re.findall(phone_pattern, line)
             current_phones.extend(phones)
             continue
         
-        # Check for phone numbers
+        # If no email found, check for phones (especially important for lines that have phone numbers only)
         phones = re.findall(phone_pattern, line)
         if phones:
             current_phones.extend(phones)
     
-    # Add the last contact if exists
+    # Append the last contact if exists
     if current_email is not None:
         contacts.append({
             "Email": current_email,
