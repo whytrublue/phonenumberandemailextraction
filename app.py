@@ -4,10 +4,10 @@ import re
 
 def extract_contacts(text):
     # Patterns
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zAZ0-9.-]+\.[a-zA-Z]{2,}'
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
-    # Keywords
+    # Keywords for mobile
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
 
     # Extract all emails
@@ -51,12 +51,11 @@ def extract_contacts(text):
                 email = emails[email_index]
                 email_index += 1
 
-                results.append({
-                    'Email': email,
-                    'Mobile': mobile,
-                    'Office': office
-                })
-
+            results.append({
+                'Email': email,
+                'Mobile': mobile,
+                'Office': office
+            })
     return results
 
 # Streamlit app
