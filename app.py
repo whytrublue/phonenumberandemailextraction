@@ -12,34 +12,37 @@ def extract_contact_details(text):
     lines = text.split("\n")
 
     contacts = []
+    seen_lines = set()  # Set to track unique full lines (name, email, phone)
+
     i = 0
-    seen_names = set()  # Set to track unique names (to avoid duplicates)
-    
     while i < len(lines):
         line = lines[i].strip()  # Remove any leading/trailing whitespace
         if not line:  # Skip empty lines
             i += 1
             continue
+
+        # Combine multiple lines into a single line (name, email, phone)
+        full_line = line
         
-        # Extract the name (current line)
-        name = line
-        if name in seen_names:  # If the name was already seen, skip this entry
-            i += 1
-            continue
-        seen_names.add(name)  # Add to set of seen names
-
-        # Try to get the email (next line)
-        email = re.search(email_pattern, lines[i+1])  # Email is usually on the next line
-        if email:
-            email = email.group(0)
-        else:
-            email = ""
-
-        # Extract phone numbers (next lines)
+        # Get the next lines for email and phone numbers (if available)
+        if i + 1 < len(lines):
+            full_line += " | " + lines[i + 1].strip()  # Add email
+        
         if i + 2 < len(lines):
-            phones = re.findall(phone_pattern, lines[i+2])
-        else:
-            phones = []
+            full_line += " | " + lines[i + 2].strip()  # Add phone numbers
+
+        # Skip if this full line has already been processed (duplicate)
+        if full_line in seen_lines:
+            i += 3  # Skip to the next contact
+            continue
+        
+        # Add to the set of processed lines
+        seen_lines.add(full_line)
+
+        # Extract the name, email, and phone numbers
+        name = lines[i].strip()
+        email = re.search(email_pattern, lines[i+1]).group(0) if i + 1 < len(lines) else ""
+        phones = re.findall(phone_pattern, lines[i+2]) if i + 2 < len(lines) else []
 
         office_phone = None
         mobile_phone = None
