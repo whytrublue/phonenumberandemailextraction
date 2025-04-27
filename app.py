@@ -1,113 +1,80 @@
+
 import streamlit as st
 import pandas as pd
 import re
 
-def extract_contacts(text):
-    # Patterns
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+# --- App Header ---
+st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
+st.title("📞 Email & Phone Extractor")
+st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
-    # Keywords
-    mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
+# --- Separator Input ---
+separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="----------------------------------------------")
 
-    # Extract all emails
-    emails = re.findall(email_pattern, text)
+# --- File Upload ---
+uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
 
-    # Split text into blocks based on newline or separators
-    blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)
+# --- Function to Extract Contacts ---
+def extract_contacts(text, separator):
+    contacts = []
 
-    results = []
-    email_index = 0  # Track email position
+    # Use the provided separator or fallback to the dashed line separator if none is provided
+    if separator.strip():
+        escaped_sep = re.escape(separator.strip())
+        blocks = re.split(rf'{escaped_sep}', text)
+    else:
+        blocks = re.split(r'(?:READ\s*MORE|[-=]{3,}|\n\s*\n){1,}', text, flags=re.IGNORECASE)
 
     for block in blocks:
-        block_lower = block.lower()
-        phones = re.findall(phone_pattern, block)
+        block = block.strip()
+        if not block:
+            continue
 
-        mobile = None
-        office = None
+        # Split the block into lines to handle the name as the first line of each contact
+        lines = block.splitlines()
+        
+        # The first line is treated as the Full Name
+        name = lines[0].strip()
 
-        # Debugging: print the block and the phones found
-        print(f"Processing block: {block}")
-        print(f"Phones found: {phones}")
+        # Extract email from the block
+        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
+        email = email_match.group(0) if email_match else ''
 
-        if phones:
-            if any(kw in block_lower for kw in mobile_keywords):
-                # Find which phone is Mobile based on proximity to keyword
-                for kw in mobile_keywords:
-                    match = re.search(rf'{kw}\s*[:=\-/>|]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
-                    if match:
-                        mobile = match.group(1)
-                        break
-                
-                # If two phones exist, assign the other one to office
-                for phone in phones:
-                    if phone != mobile:
-                        office = phone
-                        break
-            else:
-                # If two phones exist, assign mobile and office correctly
-                if len(phones) == 2:
-                    mobile = phones[0]  # Assign first phone to mobile
-                    office = phones[1]  # Assign second phone to office
-                elif len(phones) == 1:
-                    office = phones[0]  # If only one phone, assign it to office
+        # Extract phone numbers (up to 2 unique)
+        phone_matches = re.findall(
+            r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)?[:\s\-|\\>;]?\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})',
+            block,
+            flags=re.IGNORECASE
+        )
+        phone_matches = list(dict.fromkeys([p.strip() for p in phone_matches if p.strip()]))
+        phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
+        phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
 
-            # Assign extracted email
-            if email_index < len(emails):
-                email = emails[email_index]
-                email_index += 1
+        # Add the extracted information to contacts
+        contacts.append({
+            'Full Name': name,
+            'Email': email,
+            'Phone 1': phone1,
+            'Phone 2': phone2
+        })
 
-            # Ensure both mobile and office are found before appending
-            if mobile and office:
-                results.append({
-                    'Email': email,
-                    'Mobile': mobile,
-                    'Office': office
-                })
+    return contacts
 
-    return results
+# --- Process Uploaded File ---
+if uploaded_file:
+    text = uploaded_file.read().decode('utf-8')
+    results = extract_contacts(text, separator_input)
+    df = pd.DataFrame(results)
 
-# Streamlit app
-st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
+    st.subheader("📋 Extracted Contacts")
+    st.dataframe(df)
 
-uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
+    csv = df.to_csv(index=False)
+    st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
 
-st.write("OR")
-
-text_input = st.text_area("Paste your text here:")
-
-if st.button("Extract"):
-    if uploaded_file is not None:
-        text = uploaded_file.read().decode('utf-8')
-    elif text_input:
-        text = text_input
-    else:
-        st.error("Please upload a file or paste some text.")
-        st.stop()
-
-    # Display the text for debugging
-    st.subheader("Text Preview")
-    st.text(text)
-
-    extracted_data = extract_contacts(text)
-    df = pd.DataFrame(extracted_data)
-
-    # Display results as a table
-    st.subheader("Extracted Data Table")
-    st.dataframe(df)  # This will show the data in a table format
-
-    # Format the extracted data for copy-pasting
-    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
-
-    # Display the formatted data with a copy option
-    st.subheader("📋 Copy Extracted Data")
-    st.code(formatted_data, language="text")
-
-    # Option to download the extracted data as CSV
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Download Extracted Data as CSV",
-        data=csv,
-        file_name="extracted_contacts.csv",
-        mime='text/csv'
-    )
+    # --- Copy to Clipboard (for Excel or Google Sheets) ---
+    st.subheader("📄 Copy to Clipboard (Paste into Excel or Sheets)")
+    tsv_text = df.to_csv(index=False, sep='\t')
+    st.code(tsv_text, language='text')
+else:
+    st.warning("Please upload a Notepad file to extract contacts.")
