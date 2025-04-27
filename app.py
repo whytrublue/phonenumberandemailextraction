@@ -3,39 +3,43 @@ import re
 import pandas as pd
 
 def extract_contact_details(text):
-    # First normalize all whitespace and line breaks
-    text = re.sub(r'\s+', ' ', text)  # Replace any whitespace with single space
-    text = re.sub(r' ?Email: ?', '\nEmail: ', text)  # Normalize email prefix
-    text = re.sub(r' ?Cell: ?', '\nCell: ', text)  # Normalize cell prefix
+    # Regex patterns
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
     
-    # Split into contact blocks (separated by Email: or Cell: patterns)
-    blocks = re.split(r'(?:Email:|Cell:)\s*', text)
-    blocks = [block.strip() for block in blocks if block.strip()]
+    # Split into non-empty lines
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
     
     contacts = []
     current_email = None
     current_phones = []
     
-    for block in blocks:
-        # Check if block contains an email
-        email_match = re.search(r'[\w\.-]+@[\w\.-]+', block)
+    for line in lines:
+        # Check if line contains an email
+        email_match = re.search(email_pattern, line)
         if email_match:
-            # If we already have an email, save the current contact
-            if current_email:
+            # If we already have an email pending, save it first
+            if current_email is not None:
                 contacts.append({
                     "Email": current_email,
                     "Phone 1": current_phones[0] if len(current_phones) > 0 else None,
                     "Phone 2": current_phones[1] if len(current_phones) > 1 else None
                 })
                 current_phones = []
+            
             current_email = email_match.group(0)
+            # Also check for phones in the same line
+            phones = re.findall(phone_pattern, line)
+            current_phones.extend(phones)
+            continue
         
-        # Extract phone numbers from block
-        phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', block)
-        current_phones.extend(phones)
+        # Check for phone numbers
+        phones = re.findall(phone_pattern, line)
+        if phones:
+            current_phones.extend(phones)
     
-    # Add the last contact
-    if current_email:
+    # Add the last contact if exists
+    if current_email is not None:
         contacts.append({
             "Email": current_email,
             "Phone 1": current_phones[0] if len(current_phones) > 0 else None,
@@ -44,36 +48,49 @@ def extract_contact_details(text):
     
     return contacts
 
-# Streamlit UI
-st.title("Contact Info Extractor")
+# Streamlit app
+st.title("Email & Phone Extractor 📄📞")
 
-input_text = st.text_area("Paste contact information:", height=300)
+uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
+st.write("OR")
+text_input = st.text_area("Paste your text here:", height=200)
 
 if st.button("Extract"):
-    if not input_text.strip():
-        st.warning("Please paste some contact information")
+    if uploaded_file is not None:
+        text = uploaded_file.read().decode('utf-8')
+    elif text_input:
+        text = text_input
     else:
-        contacts = extract_contact_details(input_text)
-        
-        if not contacts:
-            st.warning("No contact information found")
-        else:
-            # Create DataFrame
-            df = pd.DataFrame(contacts)
-            
-            # Display results
-            st.write("### Extracted Contacts")
-            st.dataframe(df)
-            
-            # Create TSV output
-            tsv_output = "\n".join(
-                f"{row['Email']}\t{row['Phone 1'] or 'None'}\t{row['Phone 2'] or 'None'}"
-                for _, row in df.iterrows()
-            )
-            
-            st.download_button(
-                "Download as TSV",
-                data=tsv_output,
-                file_name="contacts.tsv",
-                mime="text/tsv"
-            )
+        st.error("Please upload a file or paste some text.")
+        st.stop()
+
+    extracted_data = extract_contact_details(text)
+    
+    if not extracted_data:
+        st.warning("No emails or phone numbers found.")
+        st.stop()
+    
+    # Create DataFrame
+    df = pd.DataFrame(extracted_data)
+    
+    # Display results
+    st.subheader("Extracted Data")
+    st.dataframe(df)
+    
+    # Format for copy-paste
+    formatted_data = "\n".join(
+        f"{row['Email']}\t{row['Phone 1'] or 'None'}\t{row['Phone 2'] or 'None'}"
+        for _, row in df.iterrows()
+    )
+    
+    st.subheader("📋 Copy-Paste Format")
+    st.code(formatted_data)
+    
+    # Download options
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        "Download as CSV",
+        data=csv,
+        file_name="contacts.csv",
+        mime="text/csv"
+    )
