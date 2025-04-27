@@ -15,21 +15,22 @@ st.markdown("""
             width: 100% !important;  /* Make the separator take full width */
             margin-bottom: 10px !important;  /* Space between components */
         }
-        /* Style the file uploader to look similar to the separator input */
-        .stFileUploader div {
-            width: 100% !important;  /* Use full width for the file upload */
-            height: 40px !important;  /* Keep the height compact */
-            padding: 5px !important;  /* Reduce padding */
-            border-radius: 5px !important;  /* Rounded corners for consistency */
-            border: 1px solid #ccc !important;  /* Border to make it look like a text input */
+        /* Style the file uploader to be hidden initially */
+        .stFileUploader {
+            display: none;
         }
-        .stFileUploader input[type="file"] {
-            height: 100% !important;  /* Make sure file input is full height */
-            padding: 5px !important;  /* Padding inside the file input */
+        /* Style the upload button */
+        .stButton button {
+            font-size: 14px !important;  /* Smaller font size */
+            padding: 6px 12px !important;  /* Compact padding */
+            border-radius: 5px !important;  /* Rounded corners */
+            background-color: #f0f0f0 !important;  /* Light background color */
+            border: 1px solid #ccc !important;  /* Border to make it look like a button */
+            cursor: pointer;
         }
-        /* Optional: Adjust the text size of the file uploader */
-        .stFileUploader label {
-            font-size: 14px !important;
+        /* Optional: Hover effect for button */
+        .stButton button:hover {
+            background-color: #e0e0e0 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -42,8 +43,13 @@ with col1:
     # Custom Separator Input
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
     
-    # File Upload (Renamed and with simplified label)
-    uploaded_file = st.file_uploader
+    # Button to trigger file upload
+    uploaded_file_button = st.button("Upload")
+    
+    # Show the file uploader only when the button is pressed
+    if uploaded_file_button:
+        uploaded_file = st.file_uploader("Choose a Notepad (.txt) file", type=["txt"])
+
 # --- Column 2: Text Area for User Input (with more space) ---
 with col2:
     text_input = st.text_area("Or paste your text here:", height=300)
