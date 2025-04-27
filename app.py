@@ -13,14 +13,25 @@ def extract_contact_details(text):
 
     contacts = []
     i = 0
+    seen_names = set()  # Set to track unique names/job titles
     while i < len(lines):
-        name = lines[i].strip()  # Name is always on the current line
+        line = lines[i].strip()  # Remove any leading/trailing whitespace
+        if not line:  # Skip empty lines
+            i += 1
+            continue
+        
+        name = line
+        if name in seen_names:  # Skip if the name/job title was already seen
+            i += 1
+            continue
+        seen_names.add(name)
+
         email = re.search(email_pattern, lines[i+1])  # Email is usually on the next line
         if email:
             email = email.group(0)
         else:
             email = ""
-        
+
         # Check if there's enough data for phone extraction
         if i+2 < len(lines):
             phones = re.findall(phone_pattern, lines[i+2])
