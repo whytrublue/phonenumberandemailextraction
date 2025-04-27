@@ -41,8 +41,9 @@ col1, col2, col3 = st.columns([1, 3, 1])  # Create 3 columns with different widt
 with col1:
     # Custom Separator Input
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
-    # File Upload
-    uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
+    
+    # File Upload (Renamed and with simplified label)
+    uploaded_file = st.file_uploader("Upload/Drag and Drop", type=["txt"])
 
 # --- Column 2: Text Area for User Input (with more space) ---
 with col2:
