@@ -4,26 +4,62 @@ import streamlit as st
 import pandas as pd
 import re
 
+# Function to extract contacts
 def extract_contacts(file_content):
     data_list = []
 
-    # Use regex to find email addresses
+    # Extract emails
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', file_content)
-    
-    # Use regex to find phone numbers
-    phone_matches = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', file_content)
 
-    # Create a list of dictionaries
+    # Extract labeled phone numbers
+    phone_pattern = re.compile(r'(?i)(C|M|Mobile|Cell|Cellphone)[\s:=+>|]*\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})')
+    office_phone_pattern = re.compile(r'(?i)(Office|Telephone|Phone)[\s:=+>|]*\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})')
+
+    # Find matches
+    mobile_matches = phone_pattern.findall(file_content)
+    office_matches = office_phone_pattern.findall(file_content)
+
+    # Find all phone numbers (whether labeled or not)
+    all_phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', file_content)
+
+    used_numbers = set()
+
+    # Create initial list from emails
     for email in email_matches:
         data_list.append({
             'Email': email,
-            'Phone': 'Not Available'
+            'Mobile': '',
+            'Office': ''
         })
 
-    for phone in phone_matches:
-        existing_entry = next((entry for entry in data_list if entry['Phone'] == 'Not Available'), None)
-        if existing_entry:
-            existing_entry['Phone'] = phone
+    # Assign mobile numbers first
+    for label, mobile in mobile_matches:
+        for entry in data_list:
+            if not entry['Mobile']:
+                entry['Mobile'] = mobile
+                used_numbers.add(mobile)
+                break
+
+    # Assign office numbers
+    for label, office in office_matches:
+        for entry in data_list:
+            if not entry['Office']:
+                entry['Office'] = office
+                used_numbers.add(office)
+                break
+
+    # For remaining phone numbers that were not labeled
+    for phone in all_phones:
+        if phone not in used_numbers:
+            for entry in data_list:
+                if not entry['Mobile']:
+                    entry['Mobile'] = phone
+                    used_numbers.add(phone)
+                    break
+                elif not entry['Office']:
+                    entry['Office'] = phone
+                    used_numbers.add(phone)
+                    break
 
     return pd.DataFrame(data_list)
 
