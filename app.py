@@ -1,79 +1,54 @@
+# streamlit_app.py
+
 import streamlit as st
 import pandas as pd
 import re
+import io
 
-# --- App Header ---
-st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
-st.title("📞 Email & Phone Extractor")
-st.markdown("Upload a Notepad (.txt) file and enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
+def extract_contacts(file_content):
+    data_list = []
 
-# --- Separator Input ---
-separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)", value="----------------------------------------------")
+    # Use regex to find email addresses
+    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', file_content)
+    
+    # Use regex to find phone numbers
+    phone_matches = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', file_content)
 
-# --- File Upload ---
-uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
-
-# --- Function to Extract Contacts ---
-def extract_contacts(text, separator):
-    contacts = []
-
-    # Use the provided separator or fallback to the dashed line separator if none is provided
-    if separator.strip():
-        escaped_sep = re.escape(separator.strip())
-        blocks = re.split(rf'{escaped_sep}', text)
-    else:
-        blocks = re.split(r'(?:READ\s*MORE|[-=]{3,}|\n\s*\n){1,}', text, flags=re.IGNORECASE)
-
-    for block in blocks:
-        block = block.strip()
-        if not block:
-            continue
-
-        # Split the block into lines to handle the name as the first line of each contact
-        lines = block.splitlines()
-        
-        # The first line is treated as the Full Name
-        name = lines[0].strip()
-
-        # Extract email from the block
-        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', block)
-        email = email_match.group(0) if email_match else ''
-
-        # Extract phone numbers (up to 2 unique)
-        phone_matches = re.findall(
-            r'(?:m|c|cell|mobile|direct|o|tel|telephone|office)?[:\s\-|\\>;]?\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})',
-            block,
-            flags=re.IGNORECASE
-        )
-        phone_matches = list(dict.fromkeys([p.strip() for p in phone_matches if p.strip()]))
-        phone1 = phone_matches[0] if len(phone_matches) > 0 else ''
-        phone2 = phone_matches[1] if len(phone_matches) > 1 else ''
-
-        # Add the extracted information to contacts
-        contacts.append({
-            'Full Name': name,
+    # Create a unique set of email and phone matches
+    for email in email_matches:
+        data_list.append({
             'Email': email,
-            'Phone 1': phone1,
-            'Phone 2': phone2
+            'Phone': 'Not Available'
         })
 
-    return contacts
+    for phone in phone_matches:
+        existing_entry = next((entry for entry in data_list if entry['Phone'] == 'Not Available'), None)
+        if existing_entry:
+            existing_entry['Phone'] = phone
 
-# --- Process Uploaded File ---
+    return pd.DataFrame(data_list)
+
+# Streamlit UI
+st.title("📄 Contact Details Extractor")
+
+uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
+
 if uploaded_file:
-    text = uploaded_file.read().decode('utf-8')
-    results = extract_contacts(text, separator_input)
-    df = pd.DataFrame(results)
+    # Read file content
+    file_content = uploaded_file.read().decode("utf-8")
 
-    st.subheader("📋 Extracted Contacts")
+    # Extract data
+    df = extract_contacts(file_content)
+
+    # Show the extracted DataFrame
+    st.subheader("Extracted Contacts:")
     st.dataframe(df)
 
+    # Prepare CSV for download
     csv = df.to_csv(index=False)
-    st.download_button("📥 Download as CSV", csv, file_name="extracted_contacts.csv", mime='text/csv')
-
-    # --- Copy to Clipboard (for Excel or Google Sheets) ---
-    st.subheader("📄 Copy to Clipboard (Paste into Excel or Sheets)")
-    tsv_text = df.to_csv(index=False, sep='\t')
-    st.code(tsv_text, language='text')
-else:
-    st.warning("Please upload a Notepad file to extract contacts.")
+    st.download_button(
+        label="Download Contacts CSV",
+        data=csv,
+        file_name="Contacts_Details.csv",
+        mime="text/csv"
+    )
