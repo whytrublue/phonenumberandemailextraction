@@ -7,76 +7,33 @@ st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
-# --- Custom CSS to style the components with black background for buttons ---
+# --- Custom CSS to adjust the size ---
 st.markdown("""
     <style>
-        /* Custom background color for Upload and Extract buttons */
-        .stButton button {
-            background-color: black !important;  /* Black background */
-            color: white !important;  /* White text color */
-            font-size: 14px !important;  /* Smaller font size */
-            padding: 6px 12px !important;  /* Compact padding */
-            border-radius: 5px !important;  /* Rounded corners */
-            border: 1px solid #ccc !important;  /* Border */
+        .stTextArea textarea {
+            width: 300px !important;
+            height: 150px !important;
         }
-        /* Optional: Hover effect for the buttons */
-        .stButton button:hover {
-            background-color: #333 !important;  /* Darker shade of black on hover */
-        }
-
-        /* Style the custom separator to make it more compact */
-        .stTextInput {
-            width: 100% !important;
-            margin-bottom: 10px !important;
-        }
-
-        /* Style the file uploader to be hidden initially */
-        .stFileUploader {
-            display: none;
-        }
-
-        /* Style the upload button */
-        .stFileUploader + div button {
-            font-size: 14px !important;
-            padding: 6px 12px !important;
-            border-radius: 5px !important;
-            background-color: #f0f0f0 !important;
-            border: 1px solid #ccc !important;
-            cursor: pointer;
-        }
-
-        /* Optional: Hover effect for button */
-        .stFileUploader + div button:hover {
-            background-color: #e0e0e0 !important;
+        .stFileUploader div {
+            width: 300px !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # --- Layout using Columns ---
-col1, col2, col3 = st.columns([1, 3, 1])  # Create 3 columns with different widths
+col1, col2, col3 = st.columns([1, 2, 1])  # Create 3 columns with different widths
 
-# --- Column 1: Custom Separator and File Upload Below ---
+# --- Column 1: Custom Separator Input ---
 with col1:
-    # Custom Separator Input
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
-    
-    # Button to trigger file upload
-    uploaded_file_button = st.button("Upload")
-    
-    # Initialize uploaded_file variable here
-    uploaded_file = None
 
-    # Show the file uploader only when the button is pressed
-    if uploaded_file_button:
-        uploaded_file = st.file_uploader("Choose a Notepad (.txt) file", type=["txt"])
-
-# --- Column 2: Text Area for User Input (with more space) ---
+# --- Column 2: File Upload and Text Area (Smaller) ---
 with col2:
-    text_input = st.text_area("Or paste your text here:", height=300)
+    uploaded_file = st.file_uploader("📄 Upload a Notepad (.txt) file", type=["txt"])
+    text_input = st.text_area("Or paste your text here:", height=150)
 
 # --- Extract Button ---
 if st.button("Extract"):
-    # Check if the uploaded file is available
     if uploaded_file:
         text = uploaded_file.read().decode('utf-8')
     elif text_input:
