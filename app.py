@@ -26,6 +26,10 @@ def extract_contacts(text):
         mobile = None
         office = None
 
+        # Debugging: print the block and the phones found
+        print(f"Processing block: {block}")
+        print(f"Phones found: {phones}")
+
         if phones:
             if any(kw in block_lower for kw in mobile_keywords):
                 # Find which phone is Mobile based on proximity to keyword
@@ -80,6 +84,10 @@ if st.button("Extract"):
     else:
         st.error("Please upload a file or paste some text.")
         st.stop()
+
+    # Display the text for debugging
+    st.subheader("Text Preview")
+    st.text(text)
 
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
