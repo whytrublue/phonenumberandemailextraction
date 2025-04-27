@@ -28,10 +28,7 @@ def extract_contact_details(text):
                 current_phones = []
             
             current_email = email_match.group(0)
-            # Also check for phones in the same line
-            phones = re.findall(phone_pattern, line)
-            current_phones.extend(phones)
-            continue
+            continue  # Move to next line
         
         # Check for phone numbers
         phones = re.findall(phone_pattern, line)
