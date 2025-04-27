@@ -7,7 +7,7 @@ st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
-# --- Custom CSS to adjust the size ---
+# --- Custom CSS to adjust the size (making file uploader very small) ---
 st.markdown("""
     <style>
         .stTextArea textarea {
@@ -15,7 +15,10 @@ st.markdown("""
             height: 150px !important;
         }
         .stFileUploader div {
-            width: 300px !important;
+            width: 100px !important;  /* Very small width for file uploader */
+        }
+        .stFileUploader label {
+            font-size: 12px !important;  /* Smaller font size for label */
         }
     </style>
 """, unsafe_allow_html=True)
