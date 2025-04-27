@@ -47,14 +47,16 @@ def extract_contacts(text):
                     office = phones[0]
 
             # Assign extracted email
-            email = emails[email_index] if email_index < len(emails) else None
-            email_index += 1
+            if email_index < len(emails):
+    email = emails[email_index]
+    email_index += 1
 
-            results.append({
-                'Email': email,
-                'Mobile': mobile,
-                'Office': office
-            })
+    results.append({
+        'Email': email,
+        'Mobile': mobile,
+        'Office': office
+    })
+# Else ignore block (don't add blank email rows)
 
     return results
 
