@@ -11,60 +11,63 @@ def extract_contacts(file_content):
     # Extract emails
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', file_content)
 
-    # Extract labeled phone numbers
-    phone_pattern = re.compile(r'(?i)(C|M|Mobile|Cell|Cellphone)[\s:=+>|]*\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})')
-    office_phone_pattern = re.compile(r'(?i)(Office|Telephone|Phone)[\s:=+>|]*\s*(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})')
+    # Split lines
+    lines = file_content.splitlines()
 
-    # Find matches
-    mobile_matches = phone_pattern.findall(file_content)
-    office_matches = office_phone_pattern.findall(file_content)
+    emails = []
+    mobiles = []
+    offices = []
 
-    # Find all phone numbers (whether labeled or not)
-    all_phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', file_content)
+    # Process line by line
+    for line in lines:
+        # Extract email
+        email_in_line = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', line)
+        if email_in_line:
+            emails.extend(email_in_line)
 
-    used_numbers = set()
+        # Special case: look for office|c:mobile pattern
+        if 'c:' in line.lower() or 'c ' in line.lower():
+            parts = re.split(r'\||\-|\/', line)  # split using |, -, /
+            for part in parts:
+                if re.search(r'(?i)c[\s:=+>|]*\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip()):
+                    mobile = re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip()).group()
+                else:
+                    office = re.search(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', part.strip())
+                    if office:
+                        office = office.group()
+                    else:
+                        office = ''
+            mobiles.append(mobile if 'mobile' in locals() else '')
+            offices.append(office if 'office' in locals() else '')
 
-    # Create initial list from emails
-    for email in email_matches:
-        data_list.append({
-            'Email': email,
-            'Mobile': '',
-            'Office': ''
-        })
+        else:
+            # Normal phone extraction if no "c:" found
+            phones = re.findall(r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}', line)
+            if phones:
+                # Assume first phone as office
+                if len(phones) == 2:
+                    offices.append(phones[0])
+                    mobiles.append(phones[1])
+                elif len(phones) == 1:
+                    offices.append(phones[0])
+                    mobiles.append('')
 
-    # Assign mobile numbers first
-    for label, mobile in mobile_matches:
-        for entry in data_list:
-            if not entry['Mobile']:
-                entry['Mobile'] = mobile
-                used_numbers.add(mobile)
-                break
+    # Combine based on index
+    max_len = max(len(emails), len(mobiles), len(offices))
+    emails += [''] * (max_len - len(emails))
+    mobiles += [''] * (max_len - len(mobiles))
+    offices += [''] * (max_len - len(offices))
 
-    # Assign office numbers
-    for label, office in office_matches:
-        for entry in data_list:
-            if not entry['Office']:
-                entry['Office'] = office
-                used_numbers.add(office)
-                break
+    data = {
+        'Email': emails,
+        'Mobile': mobiles,
+        'Office': offices
+    }
 
-    # For remaining phone numbers that were not labeled
-    for phone in all_phones:
-        if phone not in used_numbers:
-            for entry in data_list:
-                if not entry['Mobile']:
-                    entry['Mobile'] = phone
-                    used_numbers.add(phone)
-                    break
-                elif not entry['Office']:
-                    entry['Office'] = phone
-                    used_numbers.add(phone)
-                    break
-
-    return pd.DataFrame(data_list)
+    return pd.DataFrame(data)
 
 # Streamlit UI
-st.title("📄 Contact Details Extractor")
+st.title("📄 Smart Contact Extractor")
 
 st.write("Upload a Notepad file **or** paste your text below:")
 
