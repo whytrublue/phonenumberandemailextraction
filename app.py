@@ -82,6 +82,13 @@ if st.button("Extract"):
     st.success("Extraction Completed Successfully ✅")
     st.dataframe(df)
 
+    # Text area for pasting
+pasted_data = st.text_area("Paste your text data here", height=300)
+
+        st.subheader("Copy to Clipboard (Paste into Excel or Sheets)")
+        tsv_text = df.to_csv(index=False, sep='\t')
+        st.code(tsv_text, language='text')
+
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="Download Extracted Data as CSV",
