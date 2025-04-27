@@ -28,9 +28,8 @@ def extract_contact_details(text):
                 current_phones = []
             
             current_email = email_match.group(0)
-            continue  # Move to next line
         
-        # Check for phone numbers
+        # Check for phone numbers, even if the line doesn't contain an email
         phones = re.findall(phone_pattern, line)
         if phones:
             current_phones.extend(phones)
