@@ -2,73 +2,70 @@ import streamlit as st
 import pandas as pd
 import re
 
-# Function to extract emails and phone numbers
 def extract_contacts(text):
+    # Patterns
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
+    phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
+    # Keywords
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
-    office_keywords = ['office', 'tel', 'telephone', 'direct', 'd', 'o', 't']
 
+    # Extract all emails
     emails = re.findall(email_pattern, text)
-    phone_blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)  # split on new lines and separators like |, [], {}, ()
+
+    # Split text into blocks based on newline or separators
+    blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)
+
     results = []
+    email_index = 0  # Track email position
 
-    for block in phone_blocks:
+    for block in blocks:
         block_lower = block.lower()
-
-        # Find all phone numbers in the block
         phones = re.findall(phone_pattern, block)
 
-        # Assign default values
         mobile = None
         office = None
 
         if phones:
-            for phone in phones:
-                # Check for mobile keyword near the phone
-                if any(re.search(r'\b' + kw + r'\b\s*[:=\-/>|]?\s*' + re.escape(phone), block_lower) for kw in mobile_keywords):
-                    mobile = phone
-                # Check for office keyword near the phone
-                elif any(re.search(r'\b' + kw + r'\b\s*[:=\-/>|]?\s*' + re.escape(phone), block_lower) for kw in office_keywords):
-                    office = phone
+            if any(kw in block_lower for kw in mobile_keywords):
+                # Find which phone is Mobile based on proximity to keyword
+                for kw in mobile_keywords:
+                    match = re.search(rf'{kw}\s*[:=\-/>|]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
+                    if match:
+                        mobile = match.group(1)
+                        break
+                # If two phones, assign the other one to office
+                for phone in phones:
+                    if phone != mobile:
+                        office = phone
+                        break
+            else:
+                if len(phones) == 2:
+                    office = phones[0]
+                    mobile = phones[1]
+                elif len(phones) == 1:
+                    office = phones[0]
 
-            # If no clear mobile/office keyword, and 2 phones present
-            if not mobile and not office and len(phones) == 2:
-                mobile = phones[1]  # assume second number is mobile if | separator is used
-                office = phones[0]  # first number is office
+            # Assign extracted email
+            email = emails[email_index] if email_index < len(emails) else None
+            email_index += 1
 
-            # If only one phone and no keyword, assume it's office
-            if not mobile and not office and len(phones) == 1:
-                office = phones[0]
-
-        # Assign extracted details
-        result = {
-            'Email': None,  # we'll fill email later
-            'Mobile': mobile,
-            'Office': office
-        }
-        results.append(result)
-
-    # Now assign emails one by one
-    for i, email in enumerate(emails):
-        if i < len(results):
-            results[i]['Email'] = email
-        else:
-            # more emails than phone entries
-            results.append({'Email': email, 'Mobile': None, 'Office': None})
+            results.append({
+                'Email': email,
+                'Mobile': mobile,
+                'Office': office
+            })
 
     return results
 
-# Streamlit UI
+# Streamlit app
 st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
 
-# File upload option
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
-# Textbox option
 st.write("OR")
-text_input = st.text_area("Paste text here")
+
+text_input = st.text_area("Paste your text here:")
 
 if st.button("Extract"):
     if uploaded_file is not None:
@@ -82,14 +79,13 @@ if st.button("Extract"):
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
 
-    st.success("Extraction Complete!")
+    st.success("Extraction Completed Successfully ✅")
     st.dataframe(df)
 
-    # Download option
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="Download Extracted Data as CSV",
         data=csv,
-        file_name='extracted_contacts.csv',
-        mime='text/csv',
+        file_name="extracted_contacts.csv",
+        mime='text/csv'
     )
