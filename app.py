@@ -4,60 +4,41 @@ import re
 
 def extract_contacts(text):
     # Patterns
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
     # Keywords
-    mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
+    mobile_keywords = ['cell', 'c', 'm', 'mobile', 'cellphone']
 
-    # Extract all emails
-    emails = re.findall(email_pattern, text)
-
-    # Split text into blocks
-    blocks = text.splitlines()
+    # Split text into lines
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
 
     results = []
-    email_index = 0
-
     i = 0
-    while i < len(blocks):
-        block = blocks[i].strip()
 
-        if re.match(email_pattern, block):
-            email = block
-            mobile = None
-            office = None
+    while i < len(lines):
+        line = lines[i]
 
-            if i + 1 < len(blocks):
-                next_block = blocks[i + 1].strip()
+        email = None
+        mobile = None
+        office = None
 
-                # Find phones in next line
-                phones = re.findall(phone_pattern, next_block)
+        # Find email
+        if re.search(email_pattern, line, re.I):
+            email_match = re.search(email_pattern, line)
+            if email_match:
+                email = email_match.group(0)
 
-                # Prioritize mobile by keywords
-                if 'c:' in next_block.lower() or 'm:' in next_block.lower() or 'mobile' in next_block.lower():
-                    mobile_search = re.search(r'(?:c|m|mobile|cell|cellphone)[:\s]*([\d\-\.\s\(\)]{10,})', next_block.lower())
-                    if mobile_search:
-                        mobile = re.sub(r'[^\d]', '', mobile_search.group(1))  # Clean non-digit
-                        mobile = f"{mobile[:3]}-{mobile[3:6]}-{mobile[6:]}"  # Format nicely
-
-                    # Office number is other number
-                    all_phones = re.findall(phone_pattern, next_block)
-                    if all_phones:
-                        for phone in all_phones:
-                            # Clean and compare
-                            clean_phone = re.sub(r'[^\d]', '', phone)
-                            formatted_phone = f"{clean_phone[:3]}-{clean_phone[3:6]}-{clean_phone[6:]}"
-                            if formatted_phone != mobile:
-                                office = formatted_phone
-                                break
-                else:
-                    # No mobile keywords, guess
-                    if len(phones) >= 2:
-                        office = phones[0]
-                        mobile = phones[1]
-                    elif len(phones) == 1:
-                        office = phones[0]
+            # Look backwards to find mobile if missed
+            j = i - 1
+            while j >= 0:
+                previous_line = lines[j].lower()
+                if any(keyword in previous_line for keyword in mobile_keywords):
+                    phone_match = re.search(phone_pattern, previous_line)
+                    if phone_match:
+                        mobile = phone_match.group(0)
+                    break
+                j -= 1
 
             results.append({
                 'Email': email,
@@ -65,14 +46,47 @@ def extract_contacts(text):
                 'Office': office
             })
 
-            i += 2  # Skip next line also
-        else:
-            i += 1
+        # Find phones first (if phone appears before email)
+        elif any(keyword in line.lower() for keyword in mobile_keywords) and re.search(phone_pattern, line):
+            phone_match = re.search(phone_pattern, line)
+            if phone_match:
+                mobile = phone_match.group(0)
+
+            # Look ahead for email
+            j = i + 1
+            while j < len(lines):
+                next_line = lines[j]
+                email_match = re.search(email_pattern, next_line)
+                if email_match:
+                    email = email_match.group(0)
+                    results.append({
+                        'Email': email,
+                        'Mobile': mobile,
+                        'Office': office
+                    })
+                    break
+                j += 1
+
+        # Also handle direct email/phone on the same line
+        elif re.search(email_pattern, line) and re.search(phone_pattern, line):
+            email_match = re.search(email_pattern, line)
+            phone_match = re.search(phone_pattern, line)
+
+            email = email_match.group(0)
+            mobile = phone_match.group(0)
+
+            results.append({
+                'Email': email,
+                'Mobile': mobile,
+                'Office': office
+            })
+
+        i += 1
 
     return results
 
 # Streamlit app
-st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
+st.title("Extract Emails, Mobile, and Office Numbers 📄📞 (Updated Version)")
 
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
@@ -92,17 +106,17 @@ if st.button("Extract"):
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
 
-    # Display results as a table
+    # Display results
     st.subheader("Extracted Data Table")
     st.dataframe(df)
 
-    # Format the extracted data for copy-pasting
+    # Text output for copying
     formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.fillna('').astype(str)), axis=1))
 
     st.subheader("📋 Copy Extracted Data")
     st.code(formatted_data, language="text")
 
-    # Option to download the extracted data as CSV
+    # Download CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="Download Extracted Data as CSV",
