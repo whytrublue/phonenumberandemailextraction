@@ -7,7 +7,7 @@ def extract_contacts(text):
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
 
-    # Keywords
+    # Keywords for mobile
     mobile_keywords = ['c', 'm', 'mobile', 'cell', 'cellphone']
 
     # Extract all emails
@@ -19,8 +19,25 @@ def extract_contacts(text):
     results = []
     email_index = 0  # Track email position
 
+    # Initialize variables for Name and Job Title
+    full_name = None
+    job_title = None
+
     for block in blocks:
         block_lower = block.lower()
+
+        # Check if the block is a heading (H1 to H6) for name and job title
+        if block.startswith('#'):  # This indicates a heading (H1 to H6)
+            heading_level = block.count('#')
+            # Extracting Name and Job Title
+            if heading_level == 1:  # H1 is assumed to be Name + Job Title
+                name_job_title = block.strip('#').strip()  # Remove leading '#' and any extra spaces
+                if not full_name:  # Assume first heading is Name
+                    full_name = name_job_title
+                else:  # Assume second heading is Job Title
+                    job_title = name_job_title
+        
+        # Extract phone numbers
         phones = re.findall(phone_pattern, block)
 
         mobile = None
@@ -52,6 +69,8 @@ def extract_contacts(text):
                 email_index += 1
 
             results.append({
+                'Full Name': full_name,
+                'Job Title': job_title,
                 'Email': email,
                 'Mobile': mobile,
                 'Office': office
@@ -60,7 +79,7 @@ def extract_contacts(text):
     return results
 
 # Streamlit app
-st.title("Extract Emails, Mobile, and Office Numbers 📄📞")
+st.title("Extract Emails, Mobile, Office Numbers, Name, and Job Title 📄📞")
 
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
@@ -80,13 +99,12 @@ if st.button("Extract"):
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
 
-    # Display results as a table with H1 and H2 logic
+    # Display results as a table
     st.subheader("Extracted Data Table")
     st.dataframe(df)  # This will show the data in a table format
 
-    # Formatting the extracted data with HTML-like H1 and H2 structure for copy-pasting
-    formatted_data = "\n".join([f"# {row['Email']}\n## Mobile: {row['Mobile']}\n## Office: {row['Office']}" 
-                               for index, row in df.iterrows()])
+    # Format the extracted data for copy-pasting
+    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
     # Display the formatted data with a copy option
     st.subheader("📋 Copy Extracted Data")
