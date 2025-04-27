@@ -43,8 +43,7 @@ with col1:
     separator_input = st.text_input("✂️ Enter a custom separator between contacts (e.g., READ MORE, -----, ###)")
     
     # File Upload (Renamed and with simplified label)
-    uploaded_file = st.file_uploader("Upload/Drag and Drop", type=["txt"])
-
+    uploaded_file = st.file_uploader
 # --- Column 2: Text Area for User Input (with more space) ---
 with col2:
     text_input = st.text_area("Or paste your text here:", height=300)
