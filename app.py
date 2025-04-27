@@ -7,29 +7,46 @@ st.set_page_config(page_title="📞 Email & Phone Extractor", layout="centered")
 st.title("📞 Email & Phone Extractor")
 st.markdown("Upload a Notepad (.txt) file or paste text here, then enter a custom separator (like READ MORE, -----, ###) to extract contacts.")
 
-# --- Custom CSS to style the components similarly ---
+# --- Custom CSS to style the components with black background for buttons ---
 st.markdown("""
     <style>
+        /* Custom background color for Upload and Extract buttons */
+        .stButton button {
+            background-color: black !important;  /* Black background */
+            color: white !important;  /* White text color */
+            font-size: 14px !important;  /* Smaller font size */
+            padding: 6px 12px !important;  /* Compact padding */
+            border-radius: 5px !important;  /* Rounded corners */
+            border: 1px solid #ccc !important;  /* Border */
+        }
+        /* Optional: Hover effect for the buttons */
+        .stButton button:hover {
+            background-color: #333 !important;  /* Darker shade of black on hover */
+        }
+
         /* Style the custom separator to make it more compact */
         .stTextInput {
-            width: 100% !important;  /* Make the separator take full width */
-            margin-bottom: 10px !important;  /* Space between components */
+            width: 100% !important;
+            margin-bottom: 10px !important;
         }
+
         /* Style the file uploader to be hidden initially */
         .stFileUploader {
             display: none;
         }
+
         /* Style the upload button */
-        .stButton button {
-            font-size: 14px !important;  /* Smaller font size */
-            padding: 6px 12px !important;  /* Compact padding */
-            border-radius: 5px !important;  /* Rounded corners */
-            background-color: #f0f0f0 !important;  /* Light background color */
-            border: 1px solid #ccc !important;  /* Border to make it look like a button */
+        .stFileUploader + div button {
+            font-size: 14px !important;
+            padding: 6px 12px !important;
+            border-radius: 5px !important;
+            background-color: #f0f0f0 !important;
+            border: 1px solid #ccc !important;
             cursor: pointer;
         }
+
         /* Optional: Hover effect for button */
-        .stButton button:hover {
+        .stFileUploader + div button:hover {
             background-color: #e0e0e0 !important;
         }
     </style>
