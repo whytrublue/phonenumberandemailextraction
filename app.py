@@ -80,6 +80,10 @@ if st.button("Extract"):
     extracted_data = extract_contacts(text)
     df = pd.DataFrame(extracted_data)
 
+    # Display results as a table
+    st.subheader("Extracted Data Table")
+    st.dataframe(df)  # This will show the data in a table format
+
     # Display results in a text area box
     extracted_text = df.to_csv(index=False)
 
