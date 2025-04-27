@@ -63,6 +63,9 @@ with col1:
     # Button to trigger file upload
     uploaded_file_button = st.button("Upload")
     
+    # Initialize uploaded_file variable here
+    uploaded_file = None
+
     # Show the file uploader only when the button is pressed
     if uploaded_file_button:
         uploaded_file = st.file_uploader("Choose a Notepad (.txt) file", type=["txt"])
@@ -73,6 +76,7 @@ with col2:
 
 # --- Extract Button ---
 if st.button("Extract"):
+    # Check if the uploaded file is available
     if uploaded_file:
         text = uploaded_file.read().decode('utf-8')
     elif text_input:
