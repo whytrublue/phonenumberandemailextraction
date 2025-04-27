@@ -13,62 +13,61 @@ def extract_contacts(text):
     # Extract all emails
     emails = re.findall(email_pattern, text)
 
-    # Split text into blocks based on newline
-    blocks = re.split(r'\n', text)
+    # Split text into blocks
+    blocks = text.splitlines()
 
     results = []
-    email_index = 0  # Track email position
+    email_index = 0
 
-    for block in blocks:
-        block_lower = block.lower()
+    i = 0
+    while i < len(blocks):
+        block = blocks[i].strip()
 
-        # Split further by symbols like |, -, :, =, /, <, > but keep them connected
-        parts = re.split(r'[\|\-:=/<>]', block)
-        parts = [p.strip() for p in parts if p.strip()]
+        if re.match(email_pattern, block):
+            email = block
+            mobile = None
+            office = None
 
-        phones = []
-        for part in parts:
-            phones += re.findall(phone_pattern, part)
+            if i + 1 < len(blocks):
+                next_block = blocks[i + 1].strip()
 
-        mobile = None
-        office = None
+                # Find phones in next line
+                phones = re.findall(phone_pattern, next_block)
 
-        if phones:
-            # Priority 1: Look for mobile keyword and link number near it
-            found_mobile = False
-            for kw in mobile_keywords:
-                mobile_search = re.search(rf'{kw}\s*[:=\-/>|<]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
-                if mobile_search:
-                    mobile = mobile_search.group(1)
-                    found_mobile = True
-                    break
+                # Prioritize mobile by keywords
+                if 'c:' in next_block.lower() or 'm:' in next_block.lower() or 'mobile' in next_block.lower():
+                    mobile_search = re.search(r'(?:c|m|mobile|cell|cellphone)[:\s]*([\d\-\.\s\(\)]{10,})', next_block.lower())
+                    if mobile_search:
+                        mobile = re.sub(r'[^\d]', '', mobile_search.group(1))  # Clean non-digit
+                        mobile = f"{mobile[:3]}-{mobile[3:6]}-{mobile[6:]}"  # Format nicely
 
-            # Priority 2: Assign remaining number(s)
-            if found_mobile:
-                for phone in phones:
-                    if phone != mobile:
-                        office = phone
-                        break
-            else:
-                # No mobile keyword found
-                if len(phones) >= 2:
-                    office = phones[0]
-                    mobile = phones[1]
-                elif len(phones) == 1:
-                    office = phones[0]
-
-            # Assign extracted email
-            if email_index < len(emails):
-                email = emails[email_index]
-                email_index += 1
-            else:
-                email = None
+                    # Office number is other number
+                    all_phones = re.findall(phone_pattern, next_block)
+                    if all_phones:
+                        for phone in all_phones:
+                            # Clean and compare
+                            clean_phone = re.sub(r'[^\d]', '', phone)
+                            formatted_phone = f"{clean_phone[:3]}-{clean_phone[3:6]}-{clean_phone[6:]}"
+                            if formatted_phone != mobile:
+                                office = formatted_phone
+                                break
+                else:
+                    # No mobile keywords, guess
+                    if len(phones) >= 2:
+                        office = phones[0]
+                        mobile = phones[1]
+                    elif len(phones) == 1:
+                        office = phones[0]
 
             results.append({
                 'Email': email,
                 'Mobile': mobile,
                 'Office': office
             })
+
+            i += 2  # Skip next line also
+        else:
+            i += 1
 
     return results
 
@@ -98,7 +97,7 @@ if st.button("Extract"):
     st.dataframe(df)
 
     # Format the extracted data for copy-pasting
-    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
+    formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.fillna('').astype(str)), axis=1))
 
     st.subheader("📋 Copy Extracted Data")
     st.code(formatted_data, language="text")
