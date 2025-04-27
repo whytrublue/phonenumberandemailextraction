@@ -13,34 +13,45 @@ def extract_contacts(text):
     # Extract all emails
     emails = re.findall(email_pattern, text)
 
-    # Split text into blocks based on newline or separators
-    blocks = re.split(r'\n|[\[\]\(\)\{\}\|]', text)
+    # Split text into blocks based on newline
+    blocks = re.split(r'\n', text)
 
     results = []
     email_index = 0  # Track email position
 
     for block in blocks:
         block_lower = block.lower()
-        phones = re.findall(phone_pattern, block)
+
+        # Split further by symbols like |, -, :, =, /, <, > but keep them connected
+        parts = re.split(r'[\|\-:=/<>]', block)
+        parts = [p.strip() for p in parts if p.strip()]
+
+        phones = []
+        for part in parts:
+            phones += re.findall(phone_pattern, part)
 
         mobile = None
         office = None
 
         if phones:
-            if any(kw in block_lower for kw in mobile_keywords):
-                # Find which phone is Mobile based on proximity to keyword
-                for kw in mobile_keywords:
-                    match = re.search(rf'{kw}\s*[:=\-/>|]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
-                    if match:
-                        mobile = match.group(1)
-                        break
-                # If two phones, assign the other one to office
+            # Priority 1: Look for mobile keyword and link number near it
+            found_mobile = False
+            for kw in mobile_keywords:
+                mobile_search = re.search(rf'{kw}\s*[:=\-/>|<]?\s*(\(?\d{{3}}\)?[-.\s]?\d{{3}}[-.\s]?\d{{4}})', block_lower)
+                if mobile_search:
+                    mobile = mobile_search.group(1)
+                    found_mobile = True
+                    break
+
+            # Priority 2: Assign remaining number(s)
+            if found_mobile:
                 for phone in phones:
                     if phone != mobile:
                         office = phone
                         break
             else:
-                if len(phones) == 2:
+                # No mobile keyword found
+                if len(phones) >= 2:
                     office = phones[0]
                     mobile = phones[1]
                 elif len(phones) == 1:
@@ -50,6 +61,8 @@ def extract_contacts(text):
             if email_index < len(emails):
                 email = emails[email_index]
                 email_index += 1
+            else:
+                email = None
 
             results.append({
                 'Email': email,
@@ -82,12 +95,11 @@ if st.button("Extract"):
 
     # Display results as a table
     st.subheader("Extracted Data Table")
-    st.dataframe(df)  # This will show the data in a table format
+    st.dataframe(df)
 
     # Format the extracted data for copy-pasting
     formatted_data = "\n".join(df.apply(lambda row: "\t".join(row.astype(str)), axis=1))
 
-    # Display the formatted data with a copy option
     st.subheader("📋 Copy Extracted Data")
     st.code(formatted_data, language="text")
 
