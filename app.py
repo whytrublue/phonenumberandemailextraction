@@ -6,87 +6,63 @@ def extract_contacts(text):
     # Patterns
     email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
     phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+    mobile_keywords = ['cell', 'c:', 'm:', 'mobile', 'cellphone']
 
-    # Keywords
-    mobile_keywords = ['cell', 'c', 'm', 'mobile', 'cellphone']
-
-    # Split text into lines
+    # Split into lines
     lines = [line.strip() for line in text.splitlines() if line.strip()]
 
     results = []
-    i = 0
+    temp_record = {}
 
-    while i < len(lines):
-        line = lines[i]
-
-        email = None
-        mobile = None
-        office = None
-
+    for idx, line in enumerate(lines):
         # Find email
-        if re.search(email_pattern, line, re.I):
-            email_match = re.search(email_pattern, line)
-            if email_match:
-                email = email_match.group(0)
+        email_match = re.search(email_pattern, line)
+        phone_matches = re.findall(phone_pattern, line)
 
-            # Look backwards to find mobile if missed
-            j = i - 1
+        if email_match:
+            temp_record['Email'] = email_match.group(0)
+
+            # Check if previous lines had mobile/office numbers
+            j = idx - 1
             while j >= 0:
                 previous_line = lines[j].lower()
                 if any(keyword in previous_line for keyword in mobile_keywords):
-                    phone_match = re.search(phone_pattern, previous_line)
-                    if phone_match:
-                        mobile = phone_match.group(0)
+                    phones = re.findall(phone_pattern, previous_line)
+                    if phones:
+                        temp_record['Mobile'] = phones[0]
+                        if len(phones) > 1:
+                            temp_record['Office'] = phones[1]
+                    break
+                elif '|' in previous_line:
+                    phones = re.findall(phone_pattern, previous_line)
+                    if phones:
+                        temp_record['Office'] = phones[0]
+                        if len(phones) > 1:
+                            temp_record['Mobile'] = phones[1]
                     break
                 j -= 1
 
-            results.append({
-                'Email': email,
-                'Mobile': mobile,
-                'Office': office
-            })
+            results.append(temp_record)
+            temp_record = {}
 
-        # Find phones first (if phone appears before email)
-        elif any(keyword in line.lower() for keyword in mobile_keywords) and re.search(phone_pattern, line):
-            phone_match = re.search(phone_pattern, line)
-            if phone_match:
-                mobile = phone_match.group(0)
+        elif any(keyword in line.lower() for keyword in mobile_keywords):
+            # If 'Cell:' or 'C:' appears and no email yet
+            phones = re.findall(phone_pattern, line)
+            if phones:
+                temp_record['Mobile'] = phones[0]
 
-            # Look ahead for email
-            j = i + 1
-            while j < len(lines):
-                next_line = lines[j]
-                email_match = re.search(email_pattern, next_line)
-                if email_match:
-                    email = email_match.group(0)
-                    results.append({
-                        'Email': email,
-                        'Mobile': mobile,
-                        'Office': office
-                    })
-                    break
-                j += 1
-
-        # Also handle direct email/phone on the same line
-        elif re.search(email_pattern, line) and re.search(phone_pattern, line):
-            email_match = re.search(email_pattern, line)
-            phone_match = re.search(phone_pattern, line)
-
-            email = email_match.group(0)
-            mobile = phone_match.group(0)
-
-            results.append({
-                'Email': email,
-                'Mobile': mobile,
-                'Office': office
-            })
-
-        i += 1
+        elif '|' in line:
+            # If phones separated by |
+            phones = re.findall(phone_pattern, line)
+            if phones:
+                temp_record['Office'] = phones[0]
+                if len(phones) > 1:
+                    temp_record['Mobile'] = phones[1]
 
     return results
 
 # Streamlit app
-st.title("Extract Emails, Mobile, and Office Numbers 📄📞 (Updated Version)")
+st.title("📄📞 Extract Emails, Mobile, and Office Numbers (Handles All Formats)")
 
 uploaded_file = st.file_uploader("Upload a Notepad (.txt) file", type=["txt"])
 
